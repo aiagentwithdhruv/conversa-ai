@@ -220,7 +220,6 @@ cp .env.example .env
 ### 2. Run with Docker Compose
 
 ```bash
-cd infra
 docker-compose up --build
 ```
 
@@ -279,7 +278,10 @@ Full-Stack-AI-Chat/
 │   │   │   └── redis_service.py  # Rate limiting + cache
 │   │   └── models/
 │   │       └── schemas.py        # Pydantic request/response models
+│   ├── uploads/                  # File upload directory
 │   ├── tests/
+│   ├── .dockerignore
+│   ├── .env.example              # Backend env vars
 │   ├── Dockerfile
 │   └── requirements.txt
 │
@@ -297,20 +299,23 @@ Full-Stack-AI-Chat/
 │   │   │   └── utils.ts          # Helpers
 │   │   └── types/
 │   │       └── index.ts          # TypeScript interfaces
+│   ├── .dockerignore
+│   ├── .env.example              # Frontend env vars
 │   ├── Dockerfile
 │   └── package.json
 │
-├── infra/                        # Infrastructure
-│   ├── docker-compose.yml        # Local: backend+frontend+mongo+redis
+├── grafana/                      # Grafana dashboards
+│   └── dashboard.json            # Monitoring dashboard config
+│
+├── infrastructure/               # AWS infrastructure
 │   ├── task-definition.json      # ECS Fargate task (2 containers)
-│   ├── setup-aws.sh              # Full AWS setup script
-│   └── grafana/
-│       └── dashboard.json        # Grafana monitoring dashboard
+│   └── setup-aws.sh              # Full AWS CLI setup script
 │
 ├── .github/workflows/
 │   └── deploy.yml                # GitHub Actions → ECR → ECS
 │
-├── .env.example                  # All env vars documented
+├── docker-compose.yml            # Local dev (4 containers)
+├── .env.example                  # Root env vars
 ├── .gitignore
 ├── LOADOUT.md                    # Project context for AI
 └── README.md                     # This file
@@ -348,8 +353,8 @@ Full-Stack-AI-Chat/
 ### Infrastructure Setup
 
 ```bash
-chmod +x infra/setup-aws.sh
-./infra/setup-aws.sh
+chmod +x infrastructure/setup-aws.sh
+./infrastructure/setup-aws.sh
 ```
 
 This creates: VPC, Subnets, Security Groups, ECR repos, ECS cluster, ElastiCache, CloudWatch log groups.

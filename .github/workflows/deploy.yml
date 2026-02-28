@@ -11,7 +11,7 @@ env:
   ECR_FRONTEND_REPO: fullstack-ai-chat-frontend
   ECS_CLUSTER: fullstack-ai-chat
   ECS_SERVICE: fullstack-ai-chat-service
-  ECS_TASK_DEFINITION: infra/task-definition.json
+  ECS_TASK_DEFINITION: infrastructure/task-definition.json
 
 permissions:
   id-token: write
