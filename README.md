@@ -96,40 +96,70 @@ Health    →  http://localhost:8000/health
 
 ## Architecture
 
-```
-Browser → ALB (path routing) → ECS Fargate
-                                  ├── Frontend (Next.js 14, Port 3000)
-                                  ├── Backend  (FastAPI, Port 8000)
-                                  └── Grafana  (Dashboards, Port 3001)
-                                        │
-                                        ├── OpenAI GPT-4o (chat + vision + streaming)
-                                        ├── MongoDB Atlas (conversations, messages, files)
-                                        ├── Redis / ElastiCache (rate limiting, cache)
-                                        └── CloudWatch (logs, metrics, alerts)
+```mermaid
+graph TB
+    subgraph Client["CLIENT"]
+        BR["Browser"]
+    end
+
+    subgraph AWS["AWS CLOUD"]
+        ALB["ALB<br/>Path Routing"]
+        subgraph ECS["ECS Fargate"]
+            FE["Frontend<br/>Next.js 14<br/>Port 3000"]
+            BE["Backend<br/>FastAPI<br/>Port 8000"]
+        end
+    end
+
+    subgraph Services["SERVICES"]
+        AI["OpenAI GPT-4o<br/>Chat + Vision + Streaming"]
+        DB["MongoDB Atlas<br/>Conversations + Files"]
+        RD["Redis<br/>Rate Limiting + Cache"]
+        CW["CloudWatch<br/>Logs + Metrics"]
+    end
+
+    BR --> ALB
+    ALB -->|"/*"| FE
+    ALB -->|"/api/*"| BE
+    FE -->|"SSE Stream"| BE
+    BE --> AI
+    BE --> DB
+    BE --> RD
+    BE --> CW
+
+    style Client fill:#1e3a5f,stroke:#4a9eed,color:#e5e5e5
+    style AWS fill:#1a4d2e,stroke:#22c55e,color:#e5e5e5
+    style ECS fill:#1a4d2e,stroke:#22c55e,color:#e5e5e5
+    style Services fill:#2d1b69,stroke:#8b5cf6,color:#e5e5e5
 ```
 
 ### Request Flow
 
-```
-User sends message + file
-    │
-    ▼
-Frontend (Next.js)
-    → Optimistic UI update
-    → POST /api/chat/send (FormData)
-    → Open SSE stream, render tokens live
-    │
-    ▼
-Backend (FastAPI)
-    → Rate limit check (Redis)
-    → Process file:  PDF → pdfplumber
-                     DOCX → python-docx
-                     XLSX → openpyxl
-                     Image → base64 → Vision API
-    → Build context (history + file content)
-    → Stream GPT-4o response via SSE
-    → Store in MongoDB
-    → Auto-generate conversation title
+```mermaid
+graph LR
+    subgraph Input["USER INPUT"]
+        MSG["Message + File"]
+    end
+
+    subgraph Frontend["NEXT.JS"]
+        UI["Optimistic UI Update"]
+        POST["POST /api/chat/send"]
+        SSE["SSE Stream<br/>Render tokens live"]
+    end
+
+    subgraph Backend["FASTAPI"]
+        RL["Rate Limit Check<br/>Redis"]
+        FP["File Processor<br/>PDF · DOCX · XLSX · Image"]
+        CTX["Build Context<br/>History + File Content"]
+        GPT["Stream GPT-4o<br/>via SSE"]
+        SAVE["Store in MongoDB<br/>Auto-title"]
+    end
+
+    MSG --> UI --> POST --> RL --> FP --> CTX --> GPT --> SSE
+    GPT --> SAVE
+
+    style Input fill:#1e3a5f,stroke:#4a9eed,color:#e5e5e5
+    style Frontend fill:#1a4d2e,stroke:#22c55e,color:#e5e5e5
+    style Backend fill:#2d1b69,stroke:#8b5cf6,color:#e5e5e5
 ```
 
 ---
@@ -172,8 +202,16 @@ Backend (FastAPI)
 
 ### CI/CD Pipeline
 
-```
-git push (main) → GitHub Actions → Build Docker → Push to ECR → Deploy to ECS Fargate → Live
+```mermaid
+graph LR
+    A["git push main"] --> B["GitHub Actions"] --> C["Build Docker"] --> D["Push to ECR"] --> E["Deploy to ECS"] --> F["Live"]
+
+    style A fill:#1e3a5f,stroke:#4a9eed,color:#e5e5e5
+    style B fill:#2d1b69,stroke:#8b5cf6,color:#e5e5e5
+    style C fill:#2d1b69,stroke:#8b5cf6,color:#e5e5e5
+    style D fill:#2d1b69,stroke:#8b5cf6,color:#e5e5e5
+    style E fill:#1a4d2e,stroke:#22c55e,color:#e5e5e5
+    style F fill:#1a4d2e,stroke:#22c55e,color:#e5e5e5
 ```
 
 Every push to `main` triggers automatic deployment with zero downtime.
